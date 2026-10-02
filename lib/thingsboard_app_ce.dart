@@ -18,7 +18,7 @@ class ThingsboardApp extends HookConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return ToastificationWrapper(
-   child :  ColoredBox(
+      child: ColoredBox(
         color: tbCeTheme.scaffoldBackgroundColor,
         child: MaterialApp.router(
           debugShowCheckedModeBanner: false,
@@ -32,13 +32,13 @@ class ThingsboardApp extends HookConsumerWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: S.delegate.supportedLocales,
-          onGenerateTitle: (BuildContext context) => S.of(context).appTitle,
+          title: 'SchwaTech',
           themeMode: ThemeMode.light,
           theme: tbCeTheme,
           darkTheme: tbDarkTheme,
           routerConfig: router,
         ),
-   )
+      ),
     );
   }
 }

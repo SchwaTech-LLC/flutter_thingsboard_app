@@ -4,13 +4,16 @@ import 'dart:developer';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:thingsboard_app/constants/monohub_instances.dart';
 import 'package:thingsboard_app/core/auth/login/models/login_state.dart';
+import 'package:thingsboard_app/core/auth/login/provider/oauth_provider.dart';
 import 'package:thingsboard_app/core/auth/oauth2/i_oauth2_client.dart';
 import 'package:thingsboard_app/generated/l10n.dart';
 import 'package:thingsboard_app/locator.dart';
 import 'package:thingsboard_app/utils/services/communication/events/user_loaded_event.dart';
 import 'package:thingsboard_app/utils/services/communication/i_communication_service.dart';
 import 'package:thingsboard_app/utils/services/device_info/i_device_info_service.dart';
+import 'package:thingsboard_app/utils/services/endpoint/i_endpoint_service.dart';
 import 'package:thingsboard_app/utils/services/firebase/i_firebase_service.dart';
 import 'package:thingsboard_app/utils/services/notification_service.dart';
 import 'package:thingsboard_app/utils/services/overlay_service/i_overlay_service.dart';
@@ -78,6 +81,26 @@ class Login extends _$Login {
     return true;
   }
 
+  Future<void> selectInstance(String endpoint) async {
+    if (!MonoHubInstances.labels.containsKey(endpoint)) {
+      throw ArgumentError.value(endpoint, 'endpoint');
+    }
+    final endpoints = getIt<IEndpointService>();
+    final previous = await endpoints.getEndpoint();
+    if (previous == endpoint) return;
+    await logout();
+    try {
+      await _tbClient.reInit(endpoint);
+      await endpoints.setEndpoint(endpoint);
+    } catch (_) {
+      await _tbClient.reInit(previous);
+      await endpoints.setEndpoint(previous);
+      rethrow;
+    } finally {
+      ref.invalidate(oauthProvider);
+    }
+  }
+
   Future<void> loadUser() async {
     final mobileInfo = await _tbClient.getMobileService().getUserMobileInfo(
       MobileInfoQuery(
@@ -106,7 +129,15 @@ class Login extends _$Login {
   Future<void> _onFullyLoggedIn() async {
     await loadUser();
     if (getIt<IFirebaseService>().apps.isNotEmpty) {
-      await getIt<NotificationService>().init();
+      try {
+        await getIt<NotificationService>().init();
+      } catch (e) {
+        log('Push notification registration failed', error: e);
+        _overlayService.showErrorNotification(
+          (_) =>
+              'Push notifications could not be enabled. Please log out and sign in again to retry.',
+        );
+      }
     }
   }
 

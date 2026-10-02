@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:thingsboard_app/constants/app_constants.dart';
 import 'package:thingsboard_app/core/auth/login/provider/login_provider.dart';
@@ -11,6 +10,7 @@ import 'package:thingsboard_app/locator.dart';
 import 'package:thingsboard_app/thingsboard_client.dart';
 import 'package:thingsboard_app/utils/services/endpoint/i_endpoint_service.dart';
 import 'package:thingsboard_app/utils/services/firebase/i_firebase_service.dart';
+import 'package:thingsboard_app/utils/services/notification_service.dart';
 import 'package:thingsboard_app/utils/services/tb_client_service/i_tb_client_service.dart';
 part 'noauth_provider.g.dart';
 
@@ -72,6 +72,9 @@ class NoauthProvider extends _$NoauthProvider {
         );
       }
 
+      if (getIt<IFirebaseService>().apps.isNotEmpty) {
+        await getIt<NotificationService>().logout();
+      }
       await getIt<ITbClientService>().client.setUserFromJwtToken(
         data.token,
         data.refreshToken,
@@ -79,27 +82,11 @@ class NoauthProvider extends _$NoauthProvider {
       );
       await getIt<IEndpointService>().setEndpoint(host);
 
-      if (!isTheSameHost) {
-        _logger.debug('SwitchEndpointUseCase:deleteFB App');
-        if (Firebase.apps.isNotEmpty) {
-          getIt<IFirebaseService>()
-            ..removeApp()
-            ..removeApp(name: currentEndpoint);
-        }
-
-        // If we revert to the original host configured in the app_constants
-        final t = await getIt<IEndpointService>().isCustomEndpoint();
-        _logger.debug(t);
-        if (!t) {
-          await _initDefaultFbApp();
-        }
-      }
-
       // A re-initialization is required if we set 'notifyUser' to true for
       // 'setUserFromJwtToken'. This code will be executed twice.
       await getIt<ITbClientService>().reInit(
         endpoint: host,
-        onDone: ()  {
+        onDone: () {
           ref.invalidate(oauthProvider);
           //  await ref.read(loginProvider.notifier).handleUserLoaded();
         },

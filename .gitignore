@@ -40,6 +40,13 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 app_constants.json
+# Local ThingsBoard instance configuration. This file may contain OAuth app secrets.
+/config/thingsboard.local.json
+# Optional local SDK/tooling directory.
+/tooling/
+/.codex-remote-attachments/
+# Firebase administrator credentials must never be shipped with the app.
+**/*firebase-adminsdk*.json
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile

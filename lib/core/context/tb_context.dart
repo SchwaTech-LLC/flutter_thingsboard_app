@@ -246,9 +246,7 @@ class TbContext implements PopEntry {
         await updateRouteState();
       }
 
-      if (isAuthenticated) {
-      
-      }
+      if (isAuthenticated) {}
     } catch (e, s) {
       log.error('TbContext.onUserLoaded: $e', e, s);
 
@@ -303,7 +301,7 @@ class TbContext implements PopEntry {
     _handleRootState = true;
 
     if (getIt<IFirebaseService>().apps.isNotEmpty) {
-      await getIt<NotificationService>().init();
+      await getIt<NotificationService>().logout();
     }
 
     await tbClient.logout(requestConfig: requestConfig, notifyUser: notifyUser);

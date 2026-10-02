@@ -32,29 +32,34 @@ class _ThingsboardInitAppState extends TbPageState<ThingsboardInitRegionApp> {
           );
         }
 
-         if ((snapshot.hasError || snapshot.data == null) &&
+        if ((snapshot.hasError || snapshot.data == null) &&
             !ThingsboardAppConstants.ignoreRegionSelection) {
-                FlutterNativeSplash.remove();
+          FlutterNativeSplash.remove();
           return SelectRegionScreen(tbContext);
         }
-        if (ThingsboardAppConstants.ignoreRegionSelection) {
+        if (ThingsboardAppConstants.ignoreRegionSelection &&
+            snapshot.data == null) {
           getIt<IEndpointService>().setEndpoint(
             ThingsboardAppConstants.thingsBoardApiEndpoint,
           );
-           getIt<IEndpointService>().setRegion(Region.custom);
+          getIt<IEndpointService>().setRegion(Region.custom);
         }
- final future = initTbContext();
+        final future = initTbContext();
         return FutureBuilder(
-            future: future,
-            builder: (context, snapshot) {
-              return Scaffold(
-                body: Container(
-                  alignment: Alignment.center,
-                  color: Colors.white,
-                  child: !snapshot.hasData ? const SizedBox() :  const TbProgressIndicator(size: 50.0),
-                ),
-              );
-            });
+          future: future,
+          builder: (context, snapshot) {
+            return Scaffold(
+              body: Container(
+                alignment: Alignment.center,
+                color: Colors.white,
+                child:
+                    !snapshot.hasData
+                        ? const SizedBox()
+                        : const TbProgressIndicator(size: 50.0),
+              ),
+            );
+          },
+        );
       },
     );
   }

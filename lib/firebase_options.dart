@@ -15,9 +15,21 @@ import 'package:flutter/foundation.dart';
 /// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return android;
+    }
     throw UnsupportedError(
       'Firebase have not been configured - '
       'you can reconfigure this by running the FlutterFire CLI again.',
     );
   }
+
+  // Public Firebase client configuration; never add service-account keys here.
+  static const android = FirebaseOptions(
+    apiKey: 'AIzaSyD1GoisIVgE-APKWrcqVieRsTXbyIs8rb0',
+    appId: '1:729332576055:android:4e87b09e21529e256674b2',
+    messagingSenderId: '729332576055',
+    projectId: 'monohub-d0a6c',
+    storageBucket: 'monohub-d0a6c.firebasestorage.app',
+  );
 }

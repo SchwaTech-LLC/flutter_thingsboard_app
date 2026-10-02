@@ -4,13 +4,14 @@ import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:thingsboard_app/config/routes/router.dart';
-import 'package:thingsboard_app/config/routes/v2/router_2.dart';
 import 'package:thingsboard_app/config/themes/app_colors.dart';
+import 'package:thingsboard_app/constants/monohub_instances.dart';
 import 'package:thingsboard_app/core/logger/tb_logger.dart';
 import 'package:thingsboard_app/locator.dart';
 import 'package:thingsboard_app/modules/notification/service/i_notifications_local_service.dart';
 import 'package:thingsboard_app/modules/notification/service/notifications_local_service.dart';
 import 'package:thingsboard_app/thingsboard_client.dart';
+import 'package:thingsboard_app/utils/services/endpoint/i_endpoint_service.dart';
 import 'package:thingsboard_app/utils/services/tb_client_service/i_tb_client_service.dart';
 import 'package:thingsboard_app/utils/utils.dart';
 
@@ -25,11 +26,36 @@ class NotificationService {
   StreamSubscription? _onTokenRefreshSubscription;
 
   String? _fcmToken;
+  Future<void> _pending = Future.value();
+
+  Future<void> _serialize(Future<void> Function() action) {
+    final next = _pending.then((_) => action());
+    _pending = next.catchError((Object error) {
+      _log.error("Notification setup failed", error);
+    });
+    return next;
+  }
+
+  Future<void> _cancelListeners() async {
+    await _foregroundMessageSubscription?.cancel();
+    await _onMessageOpenedAppSubscription?.cancel();
+    await _onTokenRefreshSubscription?.cancel();
+  }
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  Future<void> init() async {
+  Future<void> init() => _serialize(_initialize);
+
+  Future<void> _initialize() async {
+    await _cancelListeners();
+    // Development push remains disabled until its server is configured.
+    if (await getIt<IEndpointService>().getEndpoint() !=
+            MonoHubInstances.production ||
+        !_tbClient.isAuthenticated()) {
+      return;
+    }
+    await _initFlutterLocalNotificationsPlugin();
     _log.debug('NotificationService::init()');
 
     final message = await FirebaseMessaging.instance.getInitialMessage();
@@ -48,24 +74,32 @@ class NotificationService {
     );
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
+      await _configFirebaseMessaging();
       await _getAndSaveToken();
 
-      _onTokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
-          .listen((token) {
-            if (_fcmToken != null) {
-              _tbClient.getUserService().removeMobileSession(_fcmToken!).then((
-                _,
-              ) {
-                _fcmToken = token;
-                if (_fcmToken != null) {
-                  _saveToken(_fcmToken!);
-                }
-              });
+      _onTokenRefreshSubscription = _messaging.onTokenRefresh.listen((token) {
+        unawaited(
+          _serialize(() async {
+            if (!_tbClient.isAuthenticated() ||
+                await getIt<IEndpointService>().getEndpoint() !=
+                    MonoHubInstances.production) {
+              return;
             }
-          });
+            final previous = _fcmToken;
+            if (previous != null && previous != token) {
+              await _tbClient.getUserService().removeMobileSession(
+                previous,
+                requestConfig: RequestConfig(ignoreErrors: true),
+              );
+            }
+            await _saveToken(token);
+            _fcmToken = token;
+          }).catchError((Object error) {
+            _log.error('Notification token refresh failed', error);
+          }),
+        );
+      });
 
-      await _initFlutterLocalNotificationsPlugin();
-      await _configFirebaseMessaging();
       _subscribeOnForegroundMessage();
       await updateNotificationsCount();
     }
@@ -91,20 +125,24 @@ class NotificationService {
     return _messaging.getInitialMessage();
   }
 
-  Future<void> logout() async {
+  Future<void> logout() => _serialize(_logout);
+
+  Future<void> _logout() async {
+    await _cancelListeners();
     getIt<TbLogger>().debug('NotificationService::logout()');
     if (_fcmToken != null) {
       getIt<TbLogger>().debug(
         'NotificationService::logout() removeMobileSession',
       );
-      _tbClient.getUserService().removeMobileSession(_fcmToken!, requestConfig: RequestConfig(ignoreErrors: true));
+      await _tbClient.getUserService().removeMobileSession(
+        _fcmToken!,
+        requestConfig: RequestConfig(ignoreErrors: true),
+      );
     }
 
-    await _foregroundMessageSubscription?.cancel();
-    await _onMessageOpenedAppSubscription?.cancel();
-    await _onTokenRefreshSubscription?.cancel();
-    await _messaging.deleteToken();
     await _messaging.setAutoInitEnabled(false);
+    await _messaging.deleteToken();
+    _fcmToken = null;
     await flutterLocalNotificationsPlugin.cancelAll();
     await _localService.clearNotificationBadgeCount();
   }
@@ -151,6 +189,19 @@ class NotificationService {
 
     const iOSPlatformChannelSpecifics = DarwinNotificationDetails();
 
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'general',
+            'General notifications',
+            description: 'This channel is used for general notifications',
+            importance: Importance.max,
+          ),
+        );
+
     _notificationDetails = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
@@ -170,7 +221,7 @@ class NotificationService {
 
   Future<String?> _resetToken(String? token) async {
     if (token != null) {
-      _tbClient.getUserService().removeMobileSession(token);
+      await _tbClient.getUserService().removeMobileSession(token);
     }
 
     await _messaging.deleteToken();
@@ -179,25 +230,27 @@ class NotificationService {
 
   Future<void> _getAndSaveToken() async {
     String? fcmToken = await getToken();
-    _log.debug('FCM token: $fcmToken');
+    if (fcmToken == null) {
+      throw StateError(
+        'Firebase could not obtain a device notification token.',
+      );
+    }
+    _log.debug('FCM token available');
 
-    if (fcmToken != null) {
-      final MobileSessionInfo? mobileInfo = await _tbClient
-          .getUserService()
-          .getMobileSession(fcmToken);
-      if (mobileInfo != null) {
-        final int timeAfterCreatedToken =
-            DateTime.now().millisecondsSinceEpoch -
-            mobileInfo.fcmTokenTimestamp;
-        if (timeAfterCreatedToken > const Duration(days: 30).inMilliseconds) {
-          fcmToken = await _resetToken(fcmToken);
-          if (fcmToken != null) {
-            await _saveToken(fcmToken);
-          }
+    final MobileSessionInfo? mobileInfo = await _tbClient
+        .getUserService()
+        .getMobileSession(fcmToken);
+    if (mobileInfo != null) {
+      final int timeAfterCreatedToken =
+          DateTime.now().millisecondsSinceEpoch - mobileInfo.fcmTokenTimestamp;
+      if (timeAfterCreatedToken > const Duration(days: 30).inMilliseconds) {
+        fcmToken = await _resetToken(fcmToken);
+        if (fcmToken != null) {
+          await _saveToken(fcmToken);
         }
-      } else {
-        await _saveToken(fcmToken);
       }
+    } else {
+      await _saveToken(fcmToken);
     }
   }
 
@@ -243,7 +296,6 @@ class NotificationService {
     Map<String, dynamic> data, {
     bool isOnNotificationsScreenAlready = false,
   }) {
-    final context = globalNavigatorKey.currentContext!;
     if (data['enabled'] == true || data['onClick.enabled'] == 'true') {
       switch (data['linkType'] ?? data['onClick.linkType']) {
         case 'DASHBOARD':

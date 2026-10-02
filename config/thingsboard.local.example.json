@@ -1,0 +1,14 @@
+{
+  "thingsboardApiEndpoint": "https://monohub.schwatech.com",
+  "thingsboardOAuth2CallbackUrlScheme": "com.schwatech.monohub.dev.auth",
+  "thingsboardAndroidAppSecret": "",
+  "thingsboardIosAppSecret": "",
+  "androidApplicationName": "SchwaTech",
+  "androidApplicationId": "com.schwatech.monohub.dev",
+  "iosApplicationName": "SchwaTech",
+  "iosApplicationId": "com.schwatech.monohub.dev",
+  "appLinksUrlHost": "monohub.schwatech.com",
+  "appLinksUrlScheme": "https",
+  "webPathPrefix": "/api/noauth/qr",
+  "navigationType": "push"
+}

@@ -3,6 +3,7 @@ import 'package:thingsboard_app/modules/main/model/navigation_type.dart';
 abstract final class ThingsboardAppConstants {
   static const thingsBoardApiEndpoint = String.fromEnvironment(
     'thingsboardApiEndpoint',
+    defaultValue: 'https://monohub.schwatech.com',
   );
   static const thingsboardOAuth2CallbackUrlScheme = String.fromEnvironment(
     'thingsboardOAuth2CallbackUrlScheme',
@@ -14,8 +15,7 @@ abstract final class ThingsboardAppConstants {
     'thingsboardAndroidAppSecret',
   );
   static const ignoreRegionSelection = thingsBoardApiEndpoint != '';
-  static final navigationType = 
-  TbNavigationType.fromString(
-  const String.fromEnvironment('navigationType'),
+  static final navigationType = TbNavigationType.fromString(
+    const String.fromEnvironment('navigationType'),
   );
 }

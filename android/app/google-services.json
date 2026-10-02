@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "729332576055",
+    "project_id": "monohub-d0a6c",
+    "storage_bucket": "monohub-d0a6c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:729332576055:android:4e87b09e21529e256674b2",
+        "android_client_info": {
+          "package_name": "com.schwatech.monohub.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1GoisIVgE-APKWrcqVieRsTXbyIs8rb0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

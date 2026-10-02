@@ -23,7 +23,6 @@ class EndpointService implements IEndpointService {
   @override
   Future<void> setEndpoint(String endpoint) async {
     _cachedEndpoint = endpoint;
-    _notifierValue.value = UniqueKey().toString();
 
     if (endpoint == northAmericaHost) {
       databaseService.saveSelectedRegion(Region.northAmerica);
@@ -34,6 +33,7 @@ class EndpointService implements IEndpointService {
     }
 
     await databaseService.setSelectedEndpoint(endpoint);
+    _notifierValue.value = UniqueKey().toString();
   }
 
   @override
@@ -47,7 +47,8 @@ class EndpointService implements IEndpointService {
   Future<bool> isCustomEndpoint() async {
     _cachedEndpoint ??= await getEndpoint();
     final host = Uri.parse(_cachedEndpoint!).host;
-    final defaultHosts = _defaultEndpoints.map((e) => Uri.parse(e).host).toSet();
+    final defaultHosts =
+        _defaultEndpoints.map((e) => Uri.parse(e).host).toSet();
     final isCustom = !defaultHosts.contains(host);
     return isCustom;
   }
