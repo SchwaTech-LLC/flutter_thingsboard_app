@@ -70,8 +70,12 @@ class TerminalParser {
     pairingUnauthenticated = false;
   }
 
-  void reset() {
-    clear();
+  void reset({bool preserveDisplay = false}) {
+    if (preserveDisplay) {
+      _cursor = _lineStart = _display.length;
+    } else {
+      clear();
+    }
     _auth = '';
     _escape = '';
     _sgr = '';
@@ -126,9 +130,10 @@ class TerminalParser {
         if (_unlockMessage && _auth.endsWith('app> ')) {
           unlocked = true;
           _auth = '';
-          _display += 'app> ';
-          _styles.addAll(List.filled(5, _style));
-          _cursor = _display.length;
+          final separator =
+              _display.isNotEmpty && !_display.endsWith('\n') ? '\n' : '';
+          // Render through the normal path so a recovered prompt stays bounded.
+          add('${separator}app> ');
         }
         continue;
       }

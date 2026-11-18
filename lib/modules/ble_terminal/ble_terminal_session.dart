@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:thingsboard_app/modules/ble_terminal/ble_terminal_transport.dart';
@@ -10,6 +11,7 @@ enum TerminalPhase {
   disconnected,
   scanning,
   connecting,
+  reconnecting,
   securing,
   locked,
   unlocked,
@@ -82,6 +84,13 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
 
   static const configuredPasskey = String.fromEnvironment('bleTerminalPasskey');
   static final _sixDigits = RegExp(r'^[0-9]{6}$');
+  static const _reconnectDelays = [
+    Duration.zero,
+    Duration(seconds: 1),
+    Duration(seconds: 2),
+  ];
+  // The native disconnect event can be delivered shortly after resume.
+  static const _resumeGrace = Duration(seconds: 5);
 
   final BleTerminalTransport transport;
   final String _terminalPasskey;
@@ -96,18 +105,46 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
   StreamSubscription<bool>? _connection;
   StreamSubscription<String>? _notifications;
   Timer? _deadline;
+  Timer? _reconnectTimer;
+  final _sinceResume = Stopwatch();
+  int _reconnectAttempts = 0;
+  bool _reconnectPending = false;
+  bool _foreground = true;
   int _epoch = 0;
   bool _notificationFailed = false;
   bool _closing = false;
-  bool _disconnecting = false;
-  Future<void>? _disconnectFuture;
+  Future<bool>? _linkCleanup;
 
   bool _current(int epoch) => !_closing && !isClosed && epoch == _epoch;
 
+  void setForeground(bool foreground) {
+    if (_closing || _foreground == foreground) return;
+    _foreground = foreground;
+    if (foreground) {
+      if (state.device != null && !_reconnectPending) {
+        _sinceResume
+          ..reset()
+          ..start();
+      }
+      _scheduleReconnect();
+    } else {
+      _sinceResume.stop();
+      _reconnectTimer?.cancel();
+      _reconnectTimer = null;
+      unawaited(stopScan());
+    }
+  }
+
   Future<void> scan() async {
-    if (_disconnecting || state.busy || state.device != null) return;
-    await disconnect();
+    if (_closing || _linkCleanup != null || state.device != null) return;
+    final cleanup = disconnect();
     final epoch = _epoch;
+    await cleanup;
+    if (!_current(epoch) ||
+        !_foreground ||
+        state.phase == TerminalPhase.error) {
+      return;
+    }
     emit(
       state.copyWith(
         phase: TerminalPhase.scanning,
@@ -147,22 +184,19 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
   }
 
   Future<void> stopScan() async {
-    if (state.phase == TerminalPhase.scanning) _epoch++;
-    _deadline?.cancel();
-    _deadline = null;
-    final scan = _scan;
-    _scan = null;
-    await scan?.cancel();
-    if (!_closing && !isClosed && state.phase == TerminalPhase.scanning) {
-      emit(state.copyWith(phase: TerminalPhase.disconnected));
-    }
+    if (state.phase == TerminalPhase.scanning) await disconnect();
   }
 
   Future<void> connect(TerminalDevice device) async {
-    if (_disconnecting || state.busy || state.device != null) return;
-    await disconnect();
+    if (_closing || _linkCleanup != null || state.device != null) return;
+    final cleanup = disconnect();
     final epoch = _epoch;
-    _parser.reset();
+    await cleanup;
+    if (!_current(epoch) ||
+        !_foreground ||
+        state.phase == TerminalPhase.error) {
+      return;
+    }
     emit(
       state.copyWith(
         phase: TerminalPhase.connecting,
@@ -176,41 +210,113 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
         clearFailure: true,
       ),
     );
+    await _startConnection(epoch, device.id);
+  }
+
+  Future<void> _startConnection(int epoch, String id) async {
     try {
-      await transport.ready();
+      if (_reconnectAttempts == 0) {
+        await transport.ready();
+      } else {
+        await transport
+            .ready(requestPermissions: false)
+            .timeout(const Duration(seconds: 8));
+      }
       if (!_current(epoch)) return;
+      if (!_foreground && _reconnectAttempts > 0) {
+        // The app moved to the background while checking BLE availability.
+        _reconnectAttempts--;
+        _reconnectPending = true;
+        return;
+      }
       _deadline = Timer(const Duration(seconds: 15), () {
         if (_current(epoch)) {
-          unawaited(disconnect(failure: TerminalFailure.connection));
+          unawaited(_connectionLost(TerminalFailure.connection));
         }
       });
       _connection = transport
-          .connect(device.id)
+          .connect(id)
           .listen(
             (connected) {
               if (!_current(epoch)) return;
-              if (connected && state.phase == TerminalPhase.connecting) {
-                unawaited(_prepare(epoch, device.id));
-              } else if (!connected) {
-                unawaited(disconnect(failure: TerminalFailure.connection));
+              if (!connected) {
+                unawaited(_connectionLost(TerminalFailure.connection));
+              } else if (state.phase == TerminalPhase.connecting ||
+                  state.phase == TerminalPhase.reconnecting) {
+                unawaited(_prepare(epoch, id));
               }
             },
             onError: (Object _) {
               if (_current(epoch)) {
-                unawaited(disconnect(failure: TerminalFailure.connection));
+                unawaited(_connectionLost(TerminalFailure.connection));
               }
             },
             onDone: () {
               if (_current(epoch)) {
-                unawaited(disconnect(failure: TerminalFailure.connection));
+                unawaited(_connectionLost(TerminalFailure.connection));
               }
             },
           );
     } catch (error) {
       if (_current(epoch)) {
-        await disconnect(failure: _failure(error, TerminalFailure.connection));
+        final failure = _failure(error, TerminalFailure.connection);
+        if (failure == TerminalFailure.connection) {
+          await _connectionLost(failure);
+        } else {
+          await disconnect(failure: failure);
+        }
       }
     }
+  }
+
+  Future<void> _connectionLost(TerminalFailure failure) async {
+    final canReconnect =
+        _reconnectAttempts > 0 ||
+        (state.phase == TerminalPhase.unlocked &&
+            (!_foreground ||
+                (_sinceResume.isRunning &&
+                    _sinceResume.elapsed < _resumeGrace)));
+    if (!canReconnect || _reconnectAttempts == _reconnectDelays.length) {
+      await disconnect(failure: failure);
+      return;
+    }
+
+    _sinceResume.stop();
+    _reconnectPending = true;
+    final cleanup = _resetLink(preserveDisplay: true);
+    final epoch = _epoch;
+    _logReconnect('BLE link lost (${failure.name})');
+    emit(
+      state.copyWith(
+        phase: TerminalPhase.reconnecting,
+        busy: false,
+        invalidPasskey: false,
+        clearFailure: true,
+      ),
+    );
+    final cancelled = await cleanup;
+    if (!_current(epoch)) return;
+    if (cancelled) {
+      _scheduleReconnect();
+    } else {
+      await disconnect(failure: TerminalFailure.connection);
+    }
+  }
+
+  void _scheduleReconnect() {
+    if (!_foreground ||
+        !_reconnectPending ||
+        _linkCleanup != null ||
+        _reconnectTimer != null) {
+      return;
+    }
+    _reconnectTimer = Timer(_reconnectDelays[_reconnectAttempts], () {
+      _reconnectTimer = null;
+      _reconnectPending = false;
+      _reconnectAttempts++;
+      _logReconnect('Starting BLE reconnect attempt $_reconnectAttempts');
+      unawaited(_startConnection(_epoch, state.device!.id));
+    });
   }
 
   Future<void> _prepare(int epoch, String id) async {
@@ -261,7 +367,12 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
       await _unlock();
     } catch (error) {
       if (_current(epoch)) {
-        await disconnect(failure: _failure(error, TerminalFailure.security));
+        final failure = _failure(error, TerminalFailure.security);
+        if (failure == TerminalFailure.notifications) {
+          await _connectionLost(failure);
+        } else {
+          await disconnect(failure: failure);
+        }
       }
     }
   }
@@ -281,6 +392,12 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
               unawaited(disconnect(failure: TerminalFailure.security));
             } else if (_parser.invalidPasskey) {
               _deadline?.cancel();
+              if (_reconnectAttempts > 0) {
+                _logReconnect(
+                  'BLE reconnect stopped: terminal unlock rejected',
+                );
+              }
+              _reconnectAttempts = 0;
               emit(
                 state.copyWith(
                   phase: TerminalPhase.locked,
@@ -291,6 +408,11 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
             } else if (_parser.unlocked &&
                 state.phase == TerminalPhase.locked) {
               _deadline?.cancel();
+              if (_reconnectAttempts > 0) {
+                _logReconnect('BLE terminal session restored');
+                _reconnectAttempts = 0;
+                _sinceResume.stop();
+              }
               emit(
                 state.copyWith(
                   phase: TerminalPhase.unlocked,
@@ -315,7 +437,7 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
             if (state.phase == TerminalPhase.securing) {
               _notificationFailed = true;
             } else {
-              unawaited(disconnect(failure: TerminalFailure.notifications));
+              unawaited(_connectionLost(TerminalFailure.notifications));
             }
           },
           onDone: () {
@@ -323,7 +445,7 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
             if (state.phase == TerminalPhase.securing) {
               _notificationFailed = true;
             } else {
-              unawaited(disconnect(failure: TerminalFailure.notifications));
+              unawaited(_connectionLost(TerminalFailure.notifications));
             }
           },
         );
@@ -387,29 +509,26 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
   }
 
   void clearDisplay() {
+    if (state.transcript.isEmpty) return;
     _parser.clear();
     emit(state.copyWith(transcript: '', textRuns: const []));
   }
 
-  Future<void> disconnect({TerminalFailure? failure}) {
-    return _disconnectFuture ??= _disconnect(failure).whenComplete(() {
-      _disconnectFuture = null;
-    });
-  }
-
-  Future<void> _disconnect(TerminalFailure? failure) async {
-    _disconnecting = true;
-    _epoch++;
-    _deadline?.cancel();
-    _deadline = null;
-    _writer.reset();
-    _parser.reset();
-    final scan = _scan;
-    final notifications = _notifications;
-    final connection = _connection;
-    _scan = null;
-    _notifications = null;
-    _connection = null;
+  Future<void> disconnect({TerminalFailure? failure}) async {
+    if (_reconnectPending || _reconnectAttempts > 0) {
+      _logReconnect(
+        failure == null
+            ? 'BLE reconnect cancelled'
+            : 'BLE reconnect stopped (${failure.name})',
+      );
+    }
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectPending = false;
+    _reconnectAttempts = 0;
+    _sinceResume.stop();
+    final cleanup = _resetLink();
+    final epoch = _epoch;
     if (!_closing && !isClosed) {
       emit(
         state.copyWith(
@@ -426,29 +545,49 @@ class BleTerminalSession extends Cubit<BleTerminalState> {
         ),
       );
     }
-    try {
-      var cancellationFailed = false;
-      // Attempt every cancellation even if one native cleanup operation fails.
-      // Cancelling reactive BLE's connection subscription disconnects GATT.
-      for (final subscription in [scan, notifications, connection]) {
-        try {
-          await subscription?.cancel();
-        } catch (_) {
-          cancellationFailed = true;
-        }
-      }
-      if (cancellationFailed && failure == null && !_closing && !isClosed) {
-        emit(
-          state.copyWith(
-            phase: TerminalPhase.error,
-            failure: TerminalFailure.connection,
-          ),
-        );
-      }
-    } finally {
-      _disconnecting = false;
+    final cancelled = await cleanup;
+    if (!cancelled && failure == null && _current(epoch)) {
+      emit(
+        state.copyWith(
+          phase: TerminalPhase.error,
+          failure: TerminalFailure.connection,
+        ),
+      );
     }
   }
+
+  Future<bool> _resetLink({bool preserveDisplay = false}) {
+    _epoch++;
+    _deadline?.cancel();
+    _deadline = null;
+    _writer.reset();
+    _parser.reset(preserveDisplay: preserveDisplay);
+    final subscriptions = [_scan, _notifications, _connection];
+    _scan = null;
+    _notifications = null;
+    _connection = null;
+    return _linkCleanup ??= _cancelSubscriptions(
+      subscriptions,
+    ).whenComplete(() => _linkCleanup = null);
+  }
+
+  Future<bool> _cancelSubscriptions(
+    List<StreamSubscription<dynamic>?> subscriptions,
+  ) async {
+    var cancelled = true;
+    // Cancelling reactive BLE's connection subscription disconnects GATT.
+    for (final subscription in subscriptions) {
+      try {
+        await subscription?.cancel();
+      } catch (_) {
+        cancelled = false;
+      }
+    }
+    return cancelled;
+  }
+
+  void _logReconnect(String message) =>
+      developer.log(message, name: 'ble_terminal');
 
   TerminalFailure _failure(Object error, TerminalFailure fallback) =>
       error is TerminalException ? error.failure : fallback;

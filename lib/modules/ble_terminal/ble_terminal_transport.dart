@@ -38,7 +38,7 @@ class TerminalDevice {
 }
 
 abstract class BleTerminalTransport {
-  Future<void> ready();
+  Future<void> ready({bool requestPermissions = true});
   Stream<TerminalDevice> scan();
   Stream<bool> connect(String id);
   Future<void> discover(String id);
@@ -66,7 +66,7 @@ class ReactiveBleTerminalTransport implements BleTerminalTransport {
   int get payloadSize => _payloadSize;
 
   @override
-  Future<void> ready() async {
+  Future<void> ready({bool requestPermissions = true}) async {
     if (kIsWeb ||
         !(defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS)) {
@@ -82,8 +82,13 @@ class ReactiveBleTerminalTransport implements BleTerminalTransport {
     } else {
       permissions = [Permission.bluetooth];
     }
-    final statuses = await permissions.request();
-    if (statuses.values.any((status) => !status.isGranted)) {
+    final granted =
+        requestPermissions
+            ? (await permissions.request()).values.every((s) => s.isGranted)
+            : (await Future.wait(
+              permissions.map((p) => p.status),
+            )).every((s) => s.isGranted);
+    if (!granted) {
       throw const TerminalException(TerminalFailure.permissions);
     }
     await _ble.initialize();
@@ -134,6 +139,7 @@ class ReactiveBleTerminalTransport implements BleTerminalTransport {
   Future<void> discover(String id) async {
     final generation = _connectionGeneration;
     await _ble.discoverAllServices(id);
+    if (generation != _connectionGeneration) throw StateError('Session ended');
     final services = await _ble.getDiscoveredServices(id);
     if (generation != _connectionGeneration) throw StateError('Session ended');
     final uart = services.firstWhereOrNull((s) => s.id == service);

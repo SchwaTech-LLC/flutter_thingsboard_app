@@ -189,9 +189,9 @@ class S {
     );
   }
 
-  /// `Clear display`
+  /// `Clear Log`
   String get bleClear {
-    return Intl.message('Clear display', name: 'bleClear', desc: '', args: []);
+    return Intl.message('Clear Log', name: 'bleClear', desc: '', args: []);
   }
 
   /// `Copy sanitized output`
@@ -309,6 +309,16 @@ class S {
     return Intl.message(
       'Connecting…',
       name: 'bleConnecting',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reconnecting…`
+  String get bleReconnecting {
+    return Intl.message(
+      'Reconnecting…',
+      name: 'bleReconnecting',
       desc: '',
       args: [],
     );

@@ -169,12 +169,18 @@ class _TerminalViewState extends State<_TerminalView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Native pairing can make the app inactive; allow it to finish.
-    if (state == AppLifecycleState.detached ||
-        (state == AppLifecycleState.paused &&
-            _session.state.phase != TerminalPhase.securing)) {
-      _command.clear();
-      unawaited(_session.disconnect());
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _session.setForeground(true);
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+        _session.setForeground(false);
+      case AppLifecycleState.detached:
+        _session.setForeground(false);
+        unawaited(_session.disconnect());
+      case AppLifecycleState.inactive:
+        // Native pairing can make the app inactive.
+        break;
     }
   }
 
@@ -224,17 +230,19 @@ class _TerminalViewState extends State<_TerminalView>
         _followOutput();
       },
       builder: (context, state) {
-        final connected = state.device != null;
+        final hasDevice = state.device != null;
         final unlocked = state.phase == TerminalPhase.unlocked;
         return Scaffold(
           appBar: AppBar(
             title: Text(s.bleTerminal),
             actions: [
+              TextButton(
+                onPressed: _session.clearDisplay,
+                child: Text(s.bleClear),
+              ),
               PopupMenuButton<String>(
                 onSelected: (action) {
                   switch (action) {
-                    case 'clear':
-                      _session.clearDisplay();
                     case 'copy':
                       unawaited(
                         Clipboard.setData(
@@ -268,11 +276,6 @@ class _TerminalViewState extends State<_TerminalView>
                 },
                 itemBuilder:
                     (_) => [
-                      PopupMenuItem(
-                        value: 'clear',
-                        enabled: state.transcript.isNotEmpty,
-                        child: Text(s.bleClear),
-                      ),
                       PopupMenuItem(
                         value: 'copy',
                         enabled: state.transcript.isNotEmpty,
@@ -337,7 +340,7 @@ class _TerminalViewState extends State<_TerminalView>
                                                     context,
                                                   ).textTheme.bodyMedium,
                                             ),
-                                            if (connected)
+                                            if (hasDevice)
                                               Text(
                                                 state.device!.name.isEmpty
                                                     ? s.bleUnnamed
@@ -353,7 +356,7 @@ class _TerminalViewState extends State<_TerminalView>
                                         ),
                                       ),
                                     ),
-                                    if (connected)
+                                    if (hasDevice)
                                       IconButton(
                                         tooltip: s.bleDisconnect,
                                         onPressed: () => _session.disconnect(),
@@ -361,7 +364,7 @@ class _TerminalViewState extends State<_TerminalView>
                                           Icons.bluetooth_disabled,
                                         ),
                                       ),
-                                    if (!connected)
+                                    if (!hasDevice)
                                       TextButton.icon(
                                         onPressed:
                                             state.phase ==
@@ -382,6 +385,7 @@ class _TerminalViewState extends State<_TerminalView>
                                   ],
                                 ),
                                 if (state.phase == TerminalPhase.connecting ||
+                                    state.phase == TerminalPhase.reconnecting ||
                                     state.phase == TerminalPhase.securing)
                                   const LinearProgressIndicator(),
                                 if (state.failure != null)
@@ -420,7 +424,7 @@ class _TerminalViewState extends State<_TerminalView>
                         ),
                         Expanded(
                           child:
-                              !connected &&
+                              !hasDevice &&
                                       (state.phase == TerminalPhase.scanning ||
                                           state.devices.isNotEmpty ||
                                           state.transcript.isEmpty)
@@ -632,6 +636,7 @@ class _TerminalViewState extends State<_TerminalView>
     TerminalPhase.disconnected => s.bleDisconnected,
     TerminalPhase.scanning => s.bleScanning,
     TerminalPhase.connecting => s.bleConnecting,
+    TerminalPhase.reconnecting => s.bleReconnecting,
     TerminalPhase.securing => s.bleSecuring,
     TerminalPhase.locked => s.bleLocked,
     TerminalPhase.unlocked => s.bleUnlocked,
