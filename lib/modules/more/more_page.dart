@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:thingsboard_app/config/routes/v2/routes_config/routes/ble_terminal_routes.dart';
 import 'package:thingsboard_app/config/themes/app_colors.dart';
 import 'package:thingsboard_app/core/auth/login/provider/login_provider.dart';
 import 'package:thingsboard_app/core/usecases/user_details_usecase.dart';
@@ -83,6 +84,14 @@ class MorePage extends HookConsumerWidget {
                   color: Colors.black.withValues(alpha: .05),
                   thickness: 1,
                   height: 0,
+                ),
+                MoreMenuItemWidget(
+                  TbMainNavigationItem(
+                    title: S.of(context).bleTerminal,
+                    icon: Icons.bluetooth,
+                    path: BleTerminalRoutes.terminal,
+                  ),
+                  onTap: () => context.push(BleTerminalRoutes.terminal),
                 ),
                 MoreMenuItemWidget(
                   TbMainNavigationItem(

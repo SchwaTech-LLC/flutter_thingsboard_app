@@ -284,8 +284,107 @@ class MessageLookup extends MessageLookupByLibrary {
     "backupCodeSetupSuccessDescription": MessageLookupByLibrary.simpleMessage(
       "The next time you log in, you will be able to use backup codes to pass two factor authentification",
     ),
+    "bleAddCommand": MessageLookupByLibrary.simpleMessage("Add button"),
+    "bleAwaitUnlock": MessageLookupByLibrary.simpleMessage(
+      "Waiting for unlock confirmation…",
+    ),
+    "bleBluetoothOff": MessageLookupByLibrary.simpleMessage(
+      "Turn on Bluetooth in the phone’s settings, then scan again.",
+    ),
+    "bleButtonLabel": MessageLookupByLibrary.simpleMessage("Button name"),
+    "bleClear": MessageLookupByLibrary.simpleMessage("Clear display"),
+    "bleCommand": MessageLookupByLibrary.simpleMessage("ASCII command"),
+    "bleCommandGuidance": MessageLookupByLibrary.simpleMessage(
+      "Use help to discover commands for this firmware. Send one ASCII command at a time (up to 240 characters). Bulk pasting is disabled.",
+    ),
+    "bleCommandsLoadFailed": MessageLookupByLibrary.simpleMessage(
+      "Could not load saved buttons. Tap to retry.",
+    ),
+    "bleCommandsSaveFailed": MessageLookupByLibrary.simpleMessage(
+      "Could not save buttons. Try again.",
+    ),
+    "bleConnecting": MessageLookupByLibrary.simpleMessage("Connecting…"),
+    "bleConnectionError": MessageLookupByLibrary.simpleMessage(
+      "The Bluetooth connection ended or could not be established. Keep the device nearby and reconnect. Commands are never resent automatically.",
+    ),
+    "bleCopy": MessageLookupByLibrary.simpleMessage("Copy sanitized output"),
+    "bleDisconnect": MessageLookupByLibrary.simpleMessage("Disconnect"),
+    "bleDisconnected": MessageLookupByLibrary.simpleMessage("Disconnected"),
+    "bleEditCommand": MessageLookupByLibrary.simpleMessage(
+      "Edit command button",
+    ),
+    "bleError": MessageLookupByLibrary.simpleMessage("BLE terminal error"),
+    "bleExport": MessageLookupByLibrary.simpleMessage(
+      "Export sanitized output",
+    ),
+    "bleExportFailed": MessageLookupByLibrary.simpleMessage(
+      "Could not export output. Try again.",
+    ),
+    "bleHelp": MessageLookupByLibrary.simpleMessage("Terminal help"),
     "bleHelpMessage": MessageLookupByLibrary.simpleMessage(
       "To provision your new device, please make sure that your phone’s Bluetooth is turned on and within range of your new device",
+    ),
+    "bleHistory": MessageLookupByLibrary.simpleMessage("Command history"),
+    "bleInputError": MessageLookupByLibrary.simpleMessage(
+      "Enter one command of 1–240 printable ASCII characters. Embedded line breaks and bulk pasting are not accepted.",
+    ),
+    "bleInvalidPasskey": MessageLookupByLibrary.simpleMessage(
+      "Automatic unlock requires a matching six-digit firmware passkey. Check the app build configuration and device, then reconnect.",
+    ),
+    "bleLabelRequired": MessageLookupByLibrary.simpleMessage(
+      "Enter a button name.",
+    ),
+    "bleLocationDisabled": MessageLookupByLibrary.simpleMessage(
+      "Turn on location services for BLE scanning on this Android version, then scan again.",
+    ),
+    "bleLocked": MessageLookupByLibrary.simpleMessage(
+      "Secure BLE connection · terminal locked",
+    ),
+    "bleMissingUart": MessageLookupByLibrary.simpleMessage(
+      "The device does not expose the required Nordic UART service, TX read / notify, and RX write-with-response characteristics.",
+    ),
+    "bleNoSavedCommands": MessageLookupByLibrary.simpleMessage(
+      "Add buttons for commands you use frequently. They stay saved on this phone.",
+    ),
+    "bleNotificationError": MessageLookupByLibrary.simpleMessage(
+      "Terminal notification subscription failed. Reconnect to try automatic unlock again.",
+    ),
+    "blePairingGuidance": MessageLookupByLibrary.simpleMessage(
+      "Complete the phone’s Bluetooth pairing dialog once using the device’s six-digit passkey, including its leading zero. Bonded devices normally skip this dialog. The app automatically unlocks the terminal after securing each connection. Authentication output is hidden; commands remain disabled until the device confirms unlock.",
+    ),
+    "blePermissionError": MessageLookupByLibrary.simpleMessage(
+      "Allow Bluetooth / Nearby devices permissions in app settings. Android 11 and earlier also need location permission for BLE scanning.",
+    ),
+    "bleSaveCommand": MessageLookupByLibrary.simpleMessage("Save button"),
+    "bleSavedCommands": MessageLookupByLibrary.simpleMessage(
+      "Saved command buttons",
+    ),
+    "bleScan": MessageLookupByLibrary.simpleMessage("Scan nearby devices"),
+    "bleScanAction": MessageLookupByLibrary.simpleMessage("Scan"),
+    "bleScanGuidance": MessageLookupByLibrary.simpleMessage(
+      "Tap Scan to find nearby UART devices. Keep Bluetooth on and your device nearby.",
+    ),
+    "bleScanning": MessageLookupByLibrary.simpleMessage("Scanning…"),
+    "bleSecuring": MessageLookupByLibrary.simpleMessage(
+      "Securing BLE connection…",
+    ),
+    "bleSecurityError": MessageLookupByLibrary.simpleMessage(
+      "Secure pairing failed or timed out. Reconnect and complete the native pairing dialog within 30 seconds. If a saved bond is stale, forget this device in the phone’s Bluetooth settings, clear the device bond using its documented procedure, and pair again.",
+    ),
+    "bleSend": MessageLookupByLibrary.simpleMessage("Send command"),
+    "bleSettings": MessageLookupByLibrary.simpleMessage("Open app settings"),
+    "bleStopScan": MessageLookupByLibrary.simpleMessage("Stop scan"),
+    "bleTerminal": MessageLookupByLibrary.simpleMessage("BLE Terminal"),
+    "bleUnlockTimeout": MessageLookupByLibrary.simpleMessage(
+      "Automatic terminal unlock was not confirmed. Check the device firmware, pairing and notification support, then reconnect.",
+    ),
+    "bleUnlocked": MessageLookupByLibrary.simpleMessage("Terminal unlocked"),
+    "bleUnnamed": MessageLookupByLibrary.simpleMessage("Unnamed BLE device"),
+    "bleUnsupported": MessageLookupByLibrary.simpleMessage(
+      "BLE Terminal is supported on Android and iOS devices with Bluetooth Low Energy.",
+    ),
+    "bleWriteError": MessageLookupByLibrary.simpleMessage(
+      "A write failed; the command may be incomplete or may already have executed. The session was disconnected. Reconnect and inspect the device before manually sending another command.",
     ),
     "calculatedField": MessageLookupByLibrary.simpleMessage("Calculated field"),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),

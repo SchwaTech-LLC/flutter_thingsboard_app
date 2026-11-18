@@ -9,6 +9,7 @@ import 'package:thingsboard_app/config/routes/v2/router_2.dart';
 import 'package:thingsboard_app/config/routes/v2/routes_config/routes/alarm_routes.dart';
 import 'package:thingsboard_app/config/routes/v2/routes_config/routes/asset_routes.dart';
 import 'package:thingsboard_app/config/routes/v2/routes_config/routes/audit_log_routes.dart';
+import 'package:thingsboard_app/config/routes/v2/routes_config/routes/ble_terminal_routes.dart';
 import 'package:thingsboard_app/config/routes/v2/routes_config/routes/customer_routes.dart';
 import 'package:thingsboard_app/config/routes/v2/routes_config/routes/dashboard_routes.dart';
 import 'package:thingsboard_app/config/routes/v2/routes_config/routes/device_routes.dart';
@@ -36,6 +37,7 @@ List<RouteBase> getRoutes() {
       parentNavigatorKey: globalNavigatorKey,
       builder: (context, state, child) => RouteHanlderWidget(child: child),
       routes: [
+        ...bleTerminalRoutes,
         ...getMainRoutes(),
         ...loginRoutes,
         ...noAuthRoutes,
