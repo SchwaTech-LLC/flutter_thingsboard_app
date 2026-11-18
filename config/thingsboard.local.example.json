@@ -3,6 +3,7 @@
   "thingsboardOAuth2CallbackUrlScheme": "com.schwatech.monohub.dev.auth",
   "thingsboardAndroidAppSecret": "",
   "thingsboardIosAppSecret": "",
+  "bleTerminalPasskey": "",
   "androidApplicationName": "SchwaTech",
   "androidApplicationId": "com.schwatech.monohub.dev",
   "iosApplicationName": "SchwaTech",

@@ -19,6 +19,10 @@ To be familiar with common app features try out our ThingsBoard Live mobile appl
 
 ## Local instance setup
 
+The Android/iOS [BLE Terminal](docs/ble-terminal.md) is available from **More**
+after completing login. It includes a full-height transcript and persistent
+command buttons. See its implementation notes and device validation checklist.
+
 Fresh installations default to production. The top-right connection settings icon on the login screen opens a dialog offering MonoHub Production (`https://monohub.schwatech.com`) and Development (`https://monohub-dev.schwatech.com`). The selection is remembered; log out to change servers. Switching clears the session and login form before changing the API endpoint. Both domains are registered for QR app links; each server must publish the matching Android signing fingerprint (and Apple association for iOS). The existing application ID is retained so this build can update the installed development app. Register that same ID in both ThingsBoard Mobile Centers. Username/password login needs no OAuth secret; the existing development OAuth secret must not be reused for production OAuth.
 
 This repository is pinned to Flutter 3.29.0 and Dart 3.7 or newer. On Windows, install Flutter 3.29.0, Java 17, and the Android SDK with platform 35 and build-tools 35.0.0. Then verify the toolchain with:

@@ -54,6 +54,446 @@ class S {
     return Localizations.of<S>(context, S);
   }
 
+  /// `BLE Terminal`
+  String get bleTerminal {
+    return Intl.message(
+      'BLE Terminal',
+      name: 'bleTerminal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scan`
+  String get bleScanAction {
+    return Intl.message('Scan', name: 'bleScanAction', desc: '', args: []);
+  }
+
+  /// `Terminal help`
+  String get bleHelp {
+    return Intl.message('Terminal help', name: 'bleHelp', desc: '', args: []);
+  }
+
+  /// `Add button`
+  String get bleAddCommand {
+    return Intl.message(
+      'Add button',
+      name: 'bleAddCommand',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit command button`
+  String get bleEditCommand {
+    return Intl.message(
+      'Edit command button',
+      name: 'bleEditCommand',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Saved command buttons`
+  String get bleSavedCommands {
+    return Intl.message(
+      'Saved command buttons',
+      name: 'bleSavedCommands',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Button name`
+  String get bleButtonLabel {
+    return Intl.message(
+      'Button name',
+      name: 'bleButtonLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save button`
+  String get bleSaveCommand {
+    return Intl.message(
+      'Save button',
+      name: 'bleSaveCommand',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a button name.`
+  String get bleLabelRequired {
+    return Intl.message(
+      'Enter a button name.',
+      name: 'bleLabelRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not load saved buttons. Tap to retry.`
+  String get bleCommandsLoadFailed {
+    return Intl.message(
+      'Could not load saved buttons. Tap to retry.',
+      name: 'bleCommandsLoadFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not save buttons. Try again.`
+  String get bleCommandsSaveFailed {
+    return Intl.message(
+      'Could not save buttons. Try again.',
+      name: 'bleCommandsSaveFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add buttons for commands you use frequently. They stay saved on this phone.`
+  String get bleNoSavedCommands {
+    return Intl.message(
+      'Add buttons for commands you use frequently. They stay saved on this phone.',
+      name: 'bleNoSavedCommands',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scan nearby devices`
+  String get bleScan {
+    return Intl.message(
+      'Scan nearby devices',
+      name: 'bleScan',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stop scan`
+  String get bleStopScan {
+    return Intl.message('Stop scan', name: 'bleStopScan', desc: '', args: []);
+  }
+
+  /// `Disconnect`
+  String get bleDisconnect {
+    return Intl.message(
+      'Disconnect',
+      name: 'bleDisconnect',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear display`
+  String get bleClear {
+    return Intl.message('Clear display', name: 'bleClear', desc: '', args: []);
+  }
+
+  /// `Copy sanitized output`
+  String get bleCopy {
+    return Intl.message(
+      'Copy sanitized output',
+      name: 'bleCopy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Export sanitized output`
+  String get bleExport {
+    return Intl.message(
+      'Export sanitized output',
+      name: 'bleExport',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not export output. Try again.`
+  String get bleExportFailed {
+    return Intl.message(
+      'Could not export output. Try again.',
+      name: 'bleExportFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open app settings`
+  String get bleSettings {
+    return Intl.message(
+      'Open app settings',
+      name: 'bleSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unnamed BLE device`
+  String get bleUnnamed {
+    return Intl.message(
+      'Unnamed BLE device',
+      name: 'bleUnnamed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Automatic unlock requires a matching six-digit firmware passkey. Check the app build configuration and device, then reconnect.`
+  String get bleInvalidPasskey {
+    return Intl.message(
+      'Automatic unlock requires a matching six-digit firmware passkey. Check the app build configuration and device, then reconnect.',
+      name: 'bleInvalidPasskey',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waiting for unlock confirmation…`
+  String get bleAwaitUnlock {
+    return Intl.message(
+      'Waiting for unlock confirmation…',
+      name: 'bleAwaitUnlock',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Send command`
+  String get bleSend {
+    return Intl.message('Send command', name: 'bleSend', desc: '', args: []);
+  }
+
+  /// `ASCII command`
+  String get bleCommand {
+    return Intl.message(
+      'ASCII command',
+      name: 'bleCommand',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Command history`
+  String get bleHistory {
+    return Intl.message(
+      'Command history',
+      name: 'bleHistory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Disconnected`
+  String get bleDisconnected {
+    return Intl.message(
+      'Disconnected',
+      name: 'bleDisconnected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scanning…`
+  String get bleScanning {
+    return Intl.message('Scanning…', name: 'bleScanning', desc: '', args: []);
+  }
+
+  /// `Connecting…`
+  String get bleConnecting {
+    return Intl.message(
+      'Connecting…',
+      name: 'bleConnecting',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Securing BLE connection…`
+  String get bleSecuring {
+    return Intl.message(
+      'Securing BLE connection…',
+      name: 'bleSecuring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Secure BLE connection · terminal locked`
+  String get bleLocked {
+    return Intl.message(
+      'Secure BLE connection · terminal locked',
+      name: 'bleLocked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Terminal unlocked`
+  String get bleUnlocked {
+    return Intl.message(
+      'Terminal unlocked',
+      name: 'bleUnlocked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `BLE terminal error`
+  String get bleError {
+    return Intl.message(
+      'BLE terminal error',
+      name: 'bleError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete the phone’s Bluetooth pairing dialog once using the device’s six-digit passkey, including its leading zero. Bonded devices normally skip this dialog. The app automatically unlocks the terminal after securing each connection. Authentication output is hidden; commands remain disabled until the device confirms unlock.`
+  String get blePairingGuidance {
+    return Intl.message(
+      'Complete the phone’s Bluetooth pairing dialog once using the device’s six-digit passkey, including its leading zero. Bonded devices normally skip this dialog. The app automatically unlocks the terminal after securing each connection. Authentication output is hidden; commands remain disabled until the device confirms unlock.',
+      name: 'blePairingGuidance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tap Scan to find nearby UART devices. Keep Bluetooth on and your device nearby.`
+  String get bleScanGuidance {
+    return Intl.message(
+      'Tap Scan to find nearby UART devices. Keep Bluetooth on and your device nearby.',
+      name: 'bleScanGuidance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use help to discover commands for this firmware. Send one ASCII command at a time (up to 240 characters). Bulk pasting is disabled.`
+  String get bleCommandGuidance {
+    return Intl.message(
+      'Use help to discover commands for this firmware. Send one ASCII command at a time (up to 240 characters). Bulk pasting is disabled.',
+      name: 'bleCommandGuidance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allow Bluetooth / Nearby devices permissions in app settings. Android 11 and earlier also need location permission for BLE scanning.`
+  String get blePermissionError {
+    return Intl.message(
+      'Allow Bluetooth / Nearby devices permissions in app settings. Android 11 and earlier also need location permission for BLE scanning.',
+      name: 'blePermissionError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Turn on Bluetooth in the phone’s settings, then scan again.`
+  String get bleBluetoothOff {
+    return Intl.message(
+      'Turn on Bluetooth in the phone’s settings, then scan again.',
+      name: 'bleBluetoothOff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `BLE Terminal is supported on Android and iOS devices with Bluetooth Low Energy.`
+  String get bleUnsupported {
+    return Intl.message(
+      'BLE Terminal is supported on Android and iOS devices with Bluetooth Low Energy.',
+      name: 'bleUnsupported',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Turn on location services for BLE scanning on this Android version, then scan again.`
+  String get bleLocationDisabled {
+    return Intl.message(
+      'Turn on location services for BLE scanning on this Android version, then scan again.',
+      name: 'bleLocationDisabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The device does not expose the required Nordic UART service, TX read / notify, and RX write-with-response characteristics.`
+  String get bleMissingUart {
+    return Intl.message(
+      'The device does not expose the required Nordic UART service, TX read / notify, and RX write-with-response characteristics.',
+      name: 'bleMissingUart',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The Bluetooth connection ended or could not be established. Keep the device nearby and reconnect. Commands are never resent automatically.`
+  String get bleConnectionError {
+    return Intl.message(
+      'The Bluetooth connection ended or could not be established. Keep the device nearby and reconnect. Commands are never resent automatically.',
+      name: 'bleConnectionError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Secure pairing failed or timed out. Reconnect and complete the native pairing dialog within 30 seconds. If a saved bond is stale, forget this device in the phone’s Bluetooth settings, clear the device bond using its documented procedure, and pair again.`
+  String get bleSecurityError {
+    return Intl.message(
+      'Secure pairing failed or timed out. Reconnect and complete the native pairing dialog within 30 seconds. If a saved bond is stale, forget this device in the phone’s Bluetooth settings, clear the device bond using its documented procedure, and pair again.',
+      name: 'bleSecurityError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Terminal notification subscription failed. Reconnect to try automatic unlock again.`
+  String get bleNotificationError {
+    return Intl.message(
+      'Terminal notification subscription failed. Reconnect to try automatic unlock again.',
+      name: 'bleNotificationError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A write failed; the command may be incomplete or may already have executed. The session was disconnected. Reconnect and inspect the device before manually sending another command.`
+  String get bleWriteError {
+    return Intl.message(
+      'A write failed; the command may be incomplete or may already have executed. The session was disconnected. Reconnect and inspect the device before manually sending another command.',
+      name: 'bleWriteError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter one command of 1–240 printable ASCII characters. Embedded line breaks and bulk pasting are not accepted.`
+  String get bleInputError {
+    return Intl.message(
+      'Enter one command of 1–240 printable ASCII characters. Embedded line breaks and bulk pasting are not accepted.',
+      name: 'bleInputError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Automatic terminal unlock was not confirmed. Check the device firmware, pairing and notification support, then reconnect.`
+  String get bleUnlockTimeout {
+    return Intl.message(
+      'Automatic terminal unlock was not confirmed. Check the device firmware, pairing and notification support, then reconnect.',
+      name: 'bleUnlockTimeout',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `ThingsBoard`
   String get appTitle {
     return Intl.message('ThingsBoard', name: 'appTitle', desc: '', args: []);
