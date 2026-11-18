@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +43,10 @@ class FakeTransport implements BleTerminalTransport {
   final connections = StreamController<bool>.broadcast(sync: true);
   final output = StreamController<List<int>>.broadcast(sync: true);
   final writes = <List<int>>[];
+  final connectionIds = <String>[];
+  final discoveryIds = <String>[];
+  int notificationSubscriptions = 0;
+  Completer<void>? _nextConnection;
   Completer<void>? readyGate;
   Completer<void>? securityGate;
   Completer<void>? writeGate;
@@ -51,19 +56,32 @@ class FakeTransport implements BleTerminalTransport {
   @override
   int get payloadSize => 20;
   @override
-  Future<void> ready() async {
+  Future<void> ready({bool requestPermissions = true}) async {
     await readyGate?.future;
   }
 
   @override
   Stream<TerminalDevice> scan() => scans.stream;
 
+  Future<void> nextConnection() => (_nextConnection ??= Completer<void>())
+      .future
+      .timeout(const Duration(seconds: 5));
+
   @override
-  Stream<bool> connect(String id) => connections.stream;
+  Stream<bool> connect(String id) {
+    connectionIds.add(id);
+    _nextConnection?.complete();
+    _nextConnection = null;
+    return connections.stream;
+  }
+
   @override
-  Future<void> discover(String id) async {}
+  Future<void> discover(String id) async => discoveryIds.add(id);
   @override
-  Stream<List<int>> notifications() => output.stream;
+  Stream<List<int>> notifications() {
+    notificationSubscriptions++;
+    return output.stream;
+  }
 
   @override
   Future<void> secure() async {
@@ -91,6 +109,21 @@ class FakeTransport implements BleTerminalTransport {
 const device = TerminalDevice(id: 'ble-id', name: 'truncated', rssi: -45);
 
 Future<void> flush() => Future<void>.delayed(Duration.zero);
+
+Widget terminalApp(FakeTransport transport) => MaterialApp(
+  localizationsDelegates: const [
+    S.delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ],
+  supportedLocales: S.delegate.supportedLocales,
+  home: BleTerminalPage(
+    terminalPasskey: testTerminalPasskey,
+    transport: transport,
+    commandStore: SavedTerminalCommands(MemoryStorage()),
+  ),
+);
 
 Future<void> connectLocked(
   BleTerminalSession session,
@@ -196,22 +229,7 @@ void main() {
       tester.view.viewInsets = const FakeViewPadding(bottom: 280);
       addTearDown(tester.view.reset);
       final transport = FakeTransport();
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: const [
-            S.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: S.delegate.supportedLocales,
-          home: BleTerminalPage(
-            transport: transport,
-            commandStore: SavedTerminalCommands(MemoryStorage()),
-            terminalPasskey: testTerminalPasskey,
-          ),
-        ),
-      );
+      await tester.pumpWidget(terminalApp(transport));
       await tester.pumpAndSettle();
       final session =
           tester.element(find.byType(Scaffold)).read<BleTerminalSession>();
@@ -229,14 +247,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(session.state.phase, TerminalPhase.unlocked);
       expect(find.text('app> '), findsOneWidget);
+      final clear = find.widgetWithText(TextButton, 'Clear Log');
+      await tester.tap(clear);
+      await tester.pump();
+      expect(find.text('app> '), findsNothing);
+      expect(session.state.textRuns, isEmpty);
+      await tester.tap(clear);
+      await tester.pump();
+      final send = find.byTooltip('Send command');
       final command = find.byWidgetPredicate(
         (w) => w is TextField && !w.obscureText,
       );
+      await tester.enterText(command, 'help');
+      await tester.tap(send);
+      await tester.pump();
+      expect(ascii.decode(transport.writes.last), 'help\n');
+      transport.notify('\x1b[31mresponse\x1b[0m');
+      await tester.pumpAndSettle();
+      expect(find.text('response'), findsOneWidget);
+      expect(transport.notificationSubscriptions, 1);
       await tester.enterText(command, 'help\nheap');
-      await tester.tap(find.byTooltip('Send command'));
+      await tester.tap(send);
       await tester.pump();
       expect(session.state.failure, TerminalFailure.invalidInput);
-      expect(transport.writes.length, 1);
+      expect(transport.writes.length, 2);
       expect(tester.widget<TextField>(command).controller!.text, 'help\nheap');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
@@ -244,6 +278,144 @@ void main() {
       await transport.dispose();
     },
   );
+
+  testWidgets('app switching keeps the existing BLE link subscribed', (
+    tester,
+  ) async {
+    final transport = FakeTransport();
+    await tester.pumpWidget(terminalApp(transport));
+    Future<void> changeLifecycle(AppLifecycleState state) =>
+        tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          SystemChannels.lifecycle.name,
+          const StringCodec().encodeMessage(state.toString()),
+          (_) {},
+        );
+    final session =
+        tester.element(find.byType(Scaffold)).read<BleTerminalSession>();
+    await session.connect(device);
+    transport.connections.add(true);
+    await tester.pumpAndSettle();
+    transport.notify('BLE terminal unlocked\napp> ');
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(session.state.phase, TerminalPhase.unlocked);
+
+    await changeLifecycle(AppLifecycleState.paused);
+    await tester.pump();
+    expect(transport.connections.hasListener, isTrue);
+    expect(transport.output.hasListener, isTrue);
+    await changeLifecycle(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(transport.connectionIds, [device.id]);
+    transport.notify('still connected');
+    await tester.pumpAndSettle();
+    expect(session.state.transcript, 'app> still connected');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    await transport.dispose();
+  });
+
+  test(
+    'background link loss restores RX, TX, and terminal state once',
+    () async {
+      final transport = FakeTransport();
+      final session = BleTerminalSession(
+        transport,
+        terminalPasskey: testTerminalPasskey,
+      );
+      addTearDown(() async {
+        await session.close();
+        await transport.dispose();
+      });
+      await connectLocked(session, transport);
+      await unlockSession(session, transport);
+      transport.notify('previous output');
+      await session.sendCommand('help');
+      session.setForeground(false);
+      transport.connections.add(false);
+      await flush();
+      expect(session.state.phase, TerminalPhase.reconnecting);
+      expect(transport.connectionIds, [device.id]);
+      expect(transport.output.hasListener, isFalse);
+      final reconnected = transport.nextConnection();
+      session.setForeground(true);
+      await reconnected;
+      expect(transport.connectionIds, [device.id, device.id]);
+      transport.connections.add(true);
+      await flush();
+      await session.sendCommand('heap');
+      expect(transport.writes.length, 3); // Two unlocks and one manual command.
+      transport.notify('BLE terminal unlocked\napp> new output');
+      expect(transport.discoveryIds, [device.id, device.id]);
+      expect(transport.notificationSubscriptions, 2);
+      expect(session.state.transcript, 'app> previous output\napp> new output');
+      expect(session.state.history, ['help']);
+      await session.sendCommand('heap');
+      expect(ascii.decode(transport.writes.last), 'heap\n');
+    },
+  );
+
+  test('resume retries a late disconnect with a bounded backoff', () async {
+    final transport = FakeTransport();
+    final session = BleTerminalSession(
+      transport,
+      terminalPasskey: testTerminalPasskey,
+    );
+    addTearDown(() async {
+      await session.close();
+      await transport.dispose();
+    });
+    await connectLocked(session, transport);
+    await unlockSession(session, transport);
+    session.setForeground(false);
+    session.setForeground(true);
+    for (final delay in [
+      Duration.zero,
+      const Duration(seconds: 1),
+      const Duration(seconds: 2),
+    ]) {
+      final next = transport.nextConnection();
+      final elapsed = Stopwatch()..start();
+      transport.connections.add(false);
+      await next;
+      expect(elapsed.elapsed, greaterThanOrEqualTo(delay));
+    }
+    transport.connections.add(false);
+    await flush();
+    expect(transport.connectionIds, hasLength(4));
+    expect(session.state.phase, TerminalPhase.error);
+    expect(session.state.device, isNull);
+    expect(transport.connections.hasListener, isFalse);
+  });
+
+  test('manual disconnect cancels recovery while waiting to retry', () async {
+    final transport = FakeTransport();
+    final session = BleTerminalSession(
+      transport,
+      terminalPasskey: testTerminalPasskey,
+    );
+    addTearDown(() async {
+      await session.close();
+      await transport.dispose();
+    });
+    await connectLocked(session, transport);
+    await unlockSession(session, transport);
+    session.setForeground(false);
+    transport.connections.add(false);
+    final next = transport.nextConnection();
+    session.setForeground(true);
+    await next;
+    transport.connections.add(false);
+    await flush();
+    expect(session.state.phase, TerminalPhase.reconnecting);
+    await session.disconnect();
+    session.setForeground(false);
+    session.setForeground(true);
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    expect(transport.connectionIds, hasLength(2));
+    expect(session.state.phase, TerminalPhase.disconnected);
+    expect(transport.connections.hasListener, isFalse);
+    expect(transport.output.hasListener, isFalse);
+  });
 
   test(
     'auth and secret echoes fragmented at every character stay out of transcript',

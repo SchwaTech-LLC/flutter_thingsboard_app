@@ -7,9 +7,10 @@ and closes its Bluetooth session. There is no terminal entry on the login screen
 Once authenticated, terminal data travels directly over BLE.
 
 The transcript fills the available height, with a compact connection row above
-and command input below. Clear, copy, export, pairing help, and saved-button
-management are in the app bar menu. Output uses larger, high-contrast monospace
-text and remains scrollable with the keyboard open.
+and command input below. **Clear Log** in the app bar clears the displayed
+output while keeping the connection and command history. Copy, export, pairing
+help, and saved-button management are in the app bar menu. Output uses larger,
+high-contrast monospace text and remains scrollable with the keyboard open.
 
 ANSI SGR colors from device logs are displayed, including standard/bright colors,
 256-color and semicolon-form RGB foreground/background colors, bold, and reset
@@ -91,14 +92,19 @@ All authentication output is hidden, including unknown messages and fragmented
 passkey echoes. Only recognized status is shown outside the transcript. The
 embedded passkey is never put in history or editable controls. Raw
 transport exceptions are not displayed or logged. Clipboard/export use the same
-sanitized transcript. A new connection starts a fresh display. Disconnect
+sanitized transcript. A manual connection starts a fresh display. Disconnect
 retains sanitized output for copying/exporting and clears history/authentication.
 
-Leaving the page cancels scans, notifications, deadlines and the GATT connection.
-Backgrounding ends normal sessions. Native pairing can temporarily pause the
-activity, so securing is allowed to continue under its deadline. Connect again
-from the terminal after returning. Forget stale bonds in phone Bluetooth
-settings and clear the device bond using its documented procedure.
+Leaving the page cancels scans, retries, notifications, deadlines and the GATT
+connection. Backgrounding leaves the GATT link and native pairing in place. If an
+unlocked session loses its link in the background or within five seconds of
+returning, the app reconnects in the foreground. It tries immediately, then
+backs off by one and two seconds on retryable failures. Recovery rediscovers
+UART, resubscribes to notifications and secures and unlocks the new link. The
+transcript and history carry over to the restored terminal. Pending command
+writes are canceled. Manual disconnect cancels recovery. If recovery fails, scan
+and connect again. Forget stale bonds in phone Bluetooth settings and clear
+the device bond using its documented procedure.
 
 ## Dependency and platforms
 
@@ -140,8 +146,11 @@ New localization strings use
 the existing English ARB and generated `S` accessors; other locales fall back to
 English until translations are supplied.
 
-The automated suite covers Dart and Flutter behavior. Physical validation of
-automatic unlock remains pending on Android and iOS.
+All 36 Flutter tests pass, including regressions for app switching, restored
+RX/TX, bounded retries, manual disconnect, and clearing the log during an active
+session. Focused Dart analysis of the BLE module and its regression tests
+reports no issues. Physical validation of reconnect and Clear Log remains
+pending on Android and iOS.
 
 ## Physical Android/iOS validation required
 
@@ -164,7 +173,9 @@ supplied deployed passkey without putting it in screenshots, logs or reports.
 | Disconnect during command | Move out of range or power off ESP32 during a long command. Remaining chunks stop, history/authentication reset, and reconnect requires unlock. Inspect device state before manual resend because delivery is uncertain. |
 | Permissions / Bluetooth off | Deny permissions, disable Bluetooth, disable location on Android <=11, then restore each. Clear guidance and a new scan recover without loops. |
 | Unsupported GATT / subscription failure | A service-advertising test peripheral with missing RX/TX/properties, or failed CCC subscription, produces a recoverable error. |
-| Lifecycle / keyboard / export | Pair through the native dialog while the activity pauses. Navigate away or background the app when unlocked and verify cleanup. Use commands with the keyboard open, clear/copy/export output, and verify automatic-unlock echoes are absent. |
+| App switch / screen lock | Pair through the native dialog while the activity pauses. With the terminal unlocked, briefly switch apps and lock/unlock the screen. Verify the link stays usable or reconnects on return, with one copy of incoming output and working commands. |
+| Background link loss | Force the BLE link to drop while the app is backgrounded. Restore the peripheral, return to the terminal, and verify automatic recovery, preserved transcript/history, and no command resend. Repeat with the peripheral unavailable to verify bounded retries. Tap Disconnect during recovery and verify no reconnect on the next resume. |
+| Clear Log / keyboard / export | With an active session and the keyboard open, tap Clear Log twice. Verify previous output is absent from the display, copy and export. Send a command and verify fresh output appears. Navigate away and verify the link closes. |
 
 iOS build validation requires macOS/Xcode and CocoaPods installation for the new
 plugin. Unit/widget tests do not establish native MITM/Secure Connections behavior,

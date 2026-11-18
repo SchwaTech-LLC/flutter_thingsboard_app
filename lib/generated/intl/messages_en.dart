@@ -292,7 +292,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Turn on Bluetooth in the phone’s settings, then scan again.",
     ),
     "bleButtonLabel": MessageLookupByLibrary.simpleMessage("Button name"),
-    "bleClear": MessageLookupByLibrary.simpleMessage("Clear display"),
+    "bleClear": MessageLookupByLibrary.simpleMessage("Clear Log"),
     "bleCommand": MessageLookupByLibrary.simpleMessage("ASCII command"),
     "bleCommandGuidance": MessageLookupByLibrary.simpleMessage(
       "Use help to discover commands for this firmware. Send one ASCII command at a time (up to 240 characters). Bulk pasting is disabled.",
@@ -355,6 +355,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "blePermissionError": MessageLookupByLibrary.simpleMessage(
       "Allow Bluetooth / Nearby devices permissions in app settings. Android 11 and earlier also need location permission for BLE scanning.",
     ),
+    "bleReconnecting": MessageLookupByLibrary.simpleMessage("Reconnecting…"),
     "bleSaveCommand": MessageLookupByLibrary.simpleMessage("Save button"),
     "bleSavedCommands": MessageLookupByLibrary.simpleMessage(
       "Saved command buttons",
