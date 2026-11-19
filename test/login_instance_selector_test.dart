@@ -7,6 +7,7 @@ import 'package:thingsboard_app/core/auth/login/provider/oauth_provider.dart';
 import 'package:thingsboard_app/core/auth/login/widgets/login_widget.dart';
 import 'package:thingsboard_app/generated/l10n.dart';
 import 'package:thingsboard_app/locator.dart';
+import 'package:thingsboard_app/modules/version/android_apk_update.dart';
 import 'package:thingsboard_app/utils/services/endpoint/i_endpoint_service.dart';
 import 'package:thingsboard_client/thingsboard_client.dart';
 
@@ -14,7 +15,7 @@ class Endpoints extends Mock implements IEndpointService {}
 
 void main() {
   testWidgets(
-    'both instances are available on a small login screen without overflow',
+    'all three servers are available on a small login screen without overflow',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1;
@@ -34,6 +35,14 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            androidApkUpdateProvider.overrideWith(
+              (ref) => AndroidApkUpdate(
+                '1.8.3',
+                Uri.parse(
+                  'https://monohub-dev.schwatech.com/downloads/monohub-1.8.3.apk',
+                ),
+              ),
+            ),
             oauthProvider.overrideWith(
               (ref) => const LoginMobileInfo(
                 oAuth2Clients: [],
@@ -50,6 +59,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      expect(find.text('Update to 1.8.3'), findsOneWidget);
       expect(find.byType(DropdownButtonFormField<String>), findsNothing);
       expect(find.text('MonoHub — Production'), findsNothing);
       expect(find.text('MonoHub — Development'), findsNothing);
@@ -57,6 +67,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('MonoHub — Production'), findsWidgets);
       expect(find.text('MonoHub — Development'), findsWidgets);
+      expect(find.text('ThingsBoard — Oracle'), findsOneWidget);
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
       expect(find.byType(SimpleDialog), findsNothing);

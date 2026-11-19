@@ -1833,6 +1833,16 @@ class S {
     );
   }
 
+  /// `Could not open the APK download. Try again.`
+  String get apkDownloadFailed {
+    return Intl.message(
+      'Could not open the APK download. Try again.',
+      name: 'apkDownloadFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Enter PIN of {deviceName} to confirm proof of possession`
   String popTitle(Object deviceName) {
     return Intl.message(

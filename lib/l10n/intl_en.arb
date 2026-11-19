@@ -228,6 +228,7 @@
   },
   "updateRequired": "Update required",
   "updateTo": "Update to {version}",
+  "apkDownloadFailed": "Could not open the APK download. Try again.",
   "popTitle": "Enter PIN of {deviceName} to confirm proof of possession",
   "next": "Next",
   "confirmation": "Confirmation",
