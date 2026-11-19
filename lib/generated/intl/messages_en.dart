@@ -254,6 +254,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "anyType": MessageLookupByLibrary.simpleMessage("Any type"),
     "apiKey": MessageLookupByLibrary.simpleMessage("Api key"),
     "apiUsageState": MessageLookupByLibrary.simpleMessage("API Usage State"),
+    "apkDownloadFailed": MessageLookupByLibrary.simpleMessage(
+      "Could not open the APK download. Try again.",
+    ),
     "appTitle": MessageLookupByLibrary.simpleMessage("ThingsBoard"),
     "applyChanges": MessageLookupByLibrary.simpleMessage("Apply changes"),
     "areYouSure": MessageLookupByLibrary.simpleMessage("Are you sure?"),

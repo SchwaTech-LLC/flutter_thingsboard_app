@@ -79,11 +79,11 @@ void main() {
     () async {
       await container
           .read(loginProvider.notifier)
-          .selectInstance(MonoHubInstances.production);
+          .selectInstance(MonoHubInstances.oracle);
       expect(operations, [
         'logout',
-        'client:${MonoHubInstances.production}',
-        'save:${MonoHubInstances.production}',
+        'client:${MonoHubInstances.oracle}',
+        'save:${MonoHubInstances.oracle}',
       ]);
     },
   );

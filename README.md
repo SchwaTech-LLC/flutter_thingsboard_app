@@ -23,7 +23,29 @@ The Android/iOS [BLE Terminal](docs/ble-terminal.md) is available from **More**
 after completing login. It includes a full-height transcript and persistent
 command buttons. See its implementation notes and device validation checklist.
 
-Fresh installations default to production. The top-right connection settings icon on the login screen opens a dialog offering MonoHub Production (`https://monohub.schwatech.com`) and Development (`https://monohub-dev.schwatech.com`). The selection is remembered; log out to change servers. Switching clears the session and login form before changing the API endpoint. Both domains are registered for QR app links; each server must publish the matching Android signing fingerprint (and Apple association for iOS). The existing application ID is retained so this build can update the installed development app. Register that same ID in both ThingsBoard Mobile Centers. Username/password login needs no OAuth secret; the existing development OAuth secret must not be reused for production OAuth.
+Fresh installations default to MonoHub Production (`https://monohub.schwatech.com`). Use the connection settings icon on the login screen to select MonoHub Development (`https://monohub-dev.schwatech.com`) or ThingsBoard Oracle (`https://thingsboard-oracle.schwatech.com`). Log out to change servers. The app clears the session and login form when switching and remembers the selected server. Production and Development have QR app-link configuration. Oracle supports selection from the login screen and would need server-side association files for verified QR app links.
+
+The existing Android application ID is retained for in-place updates with the same signing key. Username/password login needs no mobile OAuth secret. Use the credentials and mobile OAuth configuration for the selected server.
+
+### Android APK updates
+
+The login screen and **More** show **Update to [version]** when MonoHub Dev
+advertises a newer Android release with an APK link. The app reads Mobile
+Center on MonoHub Dev regardless of the selected login server. It opens the APK
+in the Android browser, and the user confirms installation.
+
+1. Increase both the version name and build number in `pubspec.yaml`. Build and
+   sign the APK with the same application ID and key as the installed copy.
+2. Serve the APK over HTTPS under `https://monohub-dev.schwatech.com/downloads/`
+   and verify it downloads from a phone. Use a versioned filename.
+3. In **Mobile Center → Applications → com.schwatech.monohub.dev** on MonoHub Dev,
+   set **Latest version** to the new version name, such as `1.8.3`. Add a clickable
+   link to the APK in that version's release notes. Mobile Center's **Google Play
+   link** field is reserved for Play Store URLs. Leave **Min version** unchanged
+   for an optional update.
+4. Open a previous build that includes this feature, tap **Update to [version]**,
+   and confirm that Android replaces the installed app. Build 15 is the first
+   build that checks for optional APK updates.
 
 This repository is pinned to Flutter 3.29.0 and Dart 3.7 or newer. On Windows, install Flutter 3.29.0, Java 17, and the Android SDK with platform 35 and build-tools 35.0.0. Then verify the toolchain with:
 
